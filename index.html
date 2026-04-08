@@ -108,7 +108,35 @@
       border-radius: 99px;
       transition: width 0.15s ease;
     }
-    #progress-label { font-size: 11px; color: var(--muted); word-break: break-all; }
+    #progress-label { font-size: 12px; font-weight: 600; color: var(--text); word-break: break-all; }
+    #progress-detail { font-size: 11px; color: var(--muted); word-break: break-all; min-height: 14px; }
+
+    /* ---- File list in progress ---- */
+    #progress-files {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      max-height: 160px;
+      overflow-y: auto;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    #progress-files:empty { display: none; }
+    .pf-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      line-height: 1.4;
+      overflow: hidden;
+    }
+    .pf-row.done   { color: #4ade80; }
+    .pf-row.active { color: var(--accent); font-weight: 600; }
+    .pf-row.pending{ color: var(--muted); }
+    .pf-icon { flex-shrink: 0; width: 14px; text-align: center; }
+    .pf-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     /* ---- Stats ---- */
     #stats-section { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -198,9 +226,9 @@
 
   <!-- File drop zone -->
   <div id="drop-zone">
-    <p>.dlt 파일을 여기에 드래그 &amp; 드롭하거나<br>아래 버튼으로 선택하세요.</p>
-    <button id="browse-btn">파일 선택</button>
-    <input id="file-input" type="file" accept=".dlt" multiple hidden>
+    <p>DLT 파일이 있는 <b>폴더</b>를 드래그 &amp; 드롭하거나<br>아래 버튼으로 선택하세요.<br><span style="font-size:11px">하위 디렉토리까지 자동으로 탐색합니다.</span></p>
+    <button id="browse-btn">폴더 선택</button>
+    <input id="file-input" type="file" webkitdirectory hidden>
   </div>
 
   <!-- Progress -->
@@ -209,6 +237,8 @@
       <div id="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
     </div>
     <div id="progress-label">준비 중...</div>
+    <div id="progress-detail"></div>
+    <div id="progress-files"></div>
   </div>
 
   <!-- Stats -->
