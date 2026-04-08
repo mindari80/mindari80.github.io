@@ -125,13 +125,40 @@ function divIcon(html, size, anchor, popupAnchor) {
 export function initMap(containerId, center = [37.5665, 126.9780]) {
   if (map) { map.remove(); map = null; }
 
-  map = L.map(containerId, { preferCanvas: true, maxZoom: 27 }).setView(center, 15);
+  map = L.map(containerId, { preferCanvas: true, maxZoom: 24 }).setView(center, 15);
 
   L.tileLayer('https://tlpimg1.tmap.co.kr/tms/1.0.0/hd_tile/{z}/{x}/{-y}.png', {
-    minZoom: 5, maxZoom: 27, maxNativeZoom: 20,
+    minZoom: 5, maxZoom: 24, maxNativeZoom: 20,
     attribution: 'TMAP',
     errorTileUrl: '',
   }).addTo(map);
+
+  // Zoom level display control (next to zoom buttons)
+  const ZoomDisplay = L.Control.extend({
+    options: { position: 'topleft' },
+    onAdd(m) {
+      const el = L.DomUtil.create('div', 'leaflet-zoom-display');
+      el.style.cssText = [
+        'background:rgba(15,23,42,0.85)',
+        'color:#e2e8f0',
+        'padding:4px 10px',
+        'font-size:13px',
+        'font-weight:700',
+        'font-family:monospace',
+        'border-radius:4px',
+        'border:1px solid rgba(148,163,184,0.25)',
+        'margin-top:2px',
+        'pointer-events:none',
+        'letter-spacing:0.5px',
+        'box-shadow:0 1px 4px rgba(0,0,0,0.4)',
+      ].join(';');
+      const update = () => { el.textContent = `Z ${m.getZoom()}`; };
+      update();
+      m.on('zoomend', update);
+      return el;
+    },
+  });
+  new ZoomDisplay().addTo(map);
 
   // Fallback OSM tile layer (shown if TMAP tiles fail)
   // Uncomment below to switch to OSM:

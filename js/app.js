@@ -26,9 +26,10 @@ const progressLabel   = document.getElementById('progress-label');
 const progressDetail  = document.getElementById('progress-detail');
 const progressFiles   = document.getElementById('progress-files');
 const statsSection    = document.getElementById('stats-section');
-const statPoints         = document.getElementById('stat-points');
-const statAnalysisCount  = document.getElementById('stat-analysis-count');
-const statGps            = document.getElementById('stat-gps');
+const statPoints          = document.getElementById('stat-points');
+const statAnalysisCount   = document.getElementById('stat-analysis-count');
+const bottomAnalysisCount = document.getElementById('bottom-analysis-count');
+const statGps             = document.getElementById('stat-gps');
 const statDrGps       = document.getElementById('stat-drgps');
 const statMmGps       = document.getElementById('stat-mmgps');
 const statMmMatch     = document.getElementById('stat-mmmatch');
@@ -58,6 +59,20 @@ const hasDirectoryPicker = typeof window.showDirectoryPicker === 'function';
 if (!hasDirectoryPicker) {
   browserWarn.style.display = 'block';
 }
+
+// ---- Analysis count (persists via localStorage across all sessions) ------- //
+
+function getAnalysisCount() {
+  return parseInt(localStorage.getItem('gpsAnalysisCount') || '0', 10);
+}
+
+function updateCountDisplay() {
+  const n = getAnalysisCount();
+  if (bottomAnalysisCount) bottomAnalysisCount.textContent = n;
+  if (statAnalysisCount)   statAnalysisCount.textContent   = n;
+}
+
+updateCountDisplay(); // show on page load
 
 // ---- Initial map load with current location ------------------------------ //
 
@@ -401,8 +416,8 @@ async function analyzeGps(dltFiles, displayNames) {
     setProgress(100, 'GPS 분석 완료', `총 ${dltFiles.length}개 파일 처리 완료`);
     renderFileList(displayNames, -1, dltFiles.length);
 
-    const count = (parseInt(localStorage.getItem('gpsAnalysisCount') || '0', 10)) + 1;
-    localStorage.setItem('gpsAnalysisCount', String(count));
+    localStorage.setItem('gpsAnalysisCount', String(getAnalysisCount() + 1));
+    updateCountDisplay();
 
     displayResults(result);
 
@@ -425,7 +440,7 @@ function displayResults({ locationLogs, mmLogs, routeRequests, ttsLogs }) {
   const mmMatchCount = mmLogs.filter(p => p.sourceType === 'mm_match').length;
 
   statPoints.textContent  = locationLogs.length;
-  statAnalysisCount.textContent = localStorage.getItem('gpsAnalysisCount') || '1';
+  updateCountDisplay();
   statGps.textContent     = gpsCount;
   statDrGps.textContent   = drGpsCount;
   statMmGps.textContent   = mmGpsCount;

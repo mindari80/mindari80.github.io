@@ -311,11 +311,34 @@
     }
     details summary { cursor: pointer; font-weight: 600; margin-top: 6px; }
 
+    /* ---- Sidebar bottom (count + logo) ---- */
+    #sidebar-bottom {
+      margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    #analysis-count-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 14px;
+    }
+    .ac-label { font-size: 12px; color: var(--muted); }
+    .ac-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent);
+    }
     /* ---- Company logo ---- */
     #company-logo {
-      margin-top: auto;
-      padding: 12px 0 4px;
       text-align: center;
+      padding-bottom: 4px;
     }
     #company-logo img {
       max-width: 160px;
@@ -325,6 +348,14 @@
       padding: 8px 14px;
       opacity: 0.85;
     }
+    #logo-fallback {
+      align-items: baseline;
+      justify-content: center;
+      gap: 4px;
+      padding: 6px 0;
+    }
+    .logo-sk  { font-size: 24px; font-weight: 900; color: #e31c1e; letter-spacing: -1px; }
+    .logo-ms  { font-size: 16px; font-weight: 700; color: #f4791e; }
 
     @media (max-width: 800px) {
       body { flex-direction: column; overflow: auto; }
@@ -429,11 +460,6 @@
     <div id="coord-result"></div>
   </div>
 
-  <!-- Company logo -->
-  <div id="company-logo">
-    <img src="images/skms-logo.png" alt="SK m&amp;service" draggable="false">
-  </div>
-
   <!-- Layer toggle -->
   <div id="layer-panel" hidden>
     <h2>레이어 토글</h2>
@@ -461,6 +487,20 @@
       <input type="checkbox" data-layer="tts" checked>
       <span class="layer-dot" style="background:var(--tts)"></span>TTS 안내
     </label>
+  </div>
+  <!-- Bottom: analysis count + logo -->
+  <div id="sidebar-bottom">
+    <div id="analysis-count-bar">
+      <span class="ac-label">DLT 분석 횟수</span>
+      <span id="bottom-analysis-count" class="ac-value">0</span>
+    </div>
+    <div id="company-logo">
+      <img src="images/skms-logo.png" alt="SK m&amp;service" draggable="false"
+           onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='flex'">
+      <div id="logo-fallback" style="display:none">
+        <span class="logo-sk">SK</span><span class="logo-ms">m&amp;service</span>
+      </div>
+    </div>
   </div>
 </aside>
 
