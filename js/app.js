@@ -11,7 +11,8 @@
 'use strict';
 
 import { extractLogs, formatTimestamp } from './extractor.js';
-import { initMap, renderLogs, toggleLayer } from './map-viewer.js';
+import { initMap, renderLogs, toggleLayer, addCoordMarker, clearCoordMarkers, getMap } from './map-viewer.js';
+import { skCoordToWgs84 } from './coordinate.js';
 
 // ---- DOM refs ------------------------------------------------------------ //
 
@@ -34,7 +35,15 @@ const statRoute       = document.getElementById('stat-route');
 const statTts         = document.getElementById('stat-tts');
 const statTimeRange   = document.getElementById('stat-timerange');
 const layerPanel      = document.getElementById('layer-panel');
-const analyzeExtraBtn = document.getElementById('analyze-extra-btn');
+const analyzeExtraBtn  = document.getElementById('analyze-extra-btn');
+const coordTypeButtons = document.querySelectorAll('.coord-type-btn');
+const coordXInput      = document.getElementById('coord-x');
+const coordYInput      = document.getElementById('coord-y');
+const coordLabelX      = document.getElementById('coord-label-x');
+const coordLabelY      = document.getElementById('coord-label-y');
+const coordShowBtn     = document.getElementById('coord-show-btn');
+const coordClearBtn    = document.getElementById('coord-clear-btn');
+const coordResult      = document.getElementById('coord-result');
 
 // ---- State for two-phase analysis ---------------------------------------- //
 
@@ -56,6 +65,71 @@ document.querySelectorAll('[data-layer]').forEach(cb => {
     toggleLayer(e.target.dataset.layer, e.target.checked);
   });
 });
+
+// ---- Coordinate search --------------------------------------------------- //
+
+let coordType = 'sk';
+
+coordTypeButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    coordType = btn.dataset.ctype;
+    coordTypeButtons.forEach(b => b.classList.toggle('active', b === btn));
+    if (coordType === 'sk') {
+      coordLabelX.textContent = 'X (경도 방향)';
+      coordLabelY.textContent = 'Y (위도 방향)';
+      coordXInput.placeholder = '예: 4571910';
+      coordYInput.placeholder = '예: 1347000';
+    } else {
+      coordLabelX.textContent = '위도 (Lat)';
+      coordLabelY.textContent = '경도 (Lon)';
+      coordXInput.placeholder = '예: 37.414890';
+      coordYInput.placeholder = '예: 127.121111';
+    }
+    coordResult.textContent = '';
+  });
+});
+
+coordShowBtn.addEventListener('click', () => {
+  const a = parseFloat(coordXInput.value);
+  const b = parseFloat(coordYInput.value);
+
+  if (isNaN(a) || isNaN(b)) {
+    setCoordResult('좌표를 입력하세요.', 'error');
+    return;
+  }
+
+  let lat, lon, popupHtml;
+
+  if (coordType === 'sk') {
+    const wgs = skCoordToWgs84(a, b);
+    if (!wgs) { setCoordResult('SK 좌표 변환 실패 — 값을 확인하세요.', 'error'); return; }
+    [lat, lon] = wgs;
+    popupHtml = `<b>SK → WGS84</b><br>SK X: ${a}<br>SK Y: ${b}<br><b>WGS84: ${lat.toFixed(6)}, ${lon.toFixed(6)}</b>`;
+    setCoordResult(`→ ${lat.toFixed(6)}, ${lon.toFixed(6)}`, 'ok');
+  } else {
+    lat = a; lon = b;
+    popupHtml = `<b>WGS84 좌표</b><br>위도: ${lat}<br>경도: ${lon}`;
+    setCoordResult(`→ ${lat.toFixed(6)}, ${lon.toFixed(6)}`, 'ok');
+  }
+
+  if (!getMap()) initMap('map', [lat, lon]);
+  addCoordMarker(lat, lon, popupHtml);
+});
+
+coordClearBtn.addEventListener('click', () => {
+  clearCoordMarkers();
+  coordResult.textContent = '';
+});
+
+// Enter key support
+[coordXInput, coordYInput].forEach(el =>
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') coordShowBtn.click(); })
+);
+
+function setCoordResult(msg, type) {
+  coordResult.textContent = msg;
+  coordResult.style.color = type === 'error' ? '#f87171' : '#4ade80';
+}
 
 // ---- Browse button: File System Access API ------------------------------- //
 

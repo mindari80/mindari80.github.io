@@ -10,6 +10,9 @@ import { formatTimestamp, preparePayloadForDisplayExport } from './extractor.js'
 let map = null;
 let layers = {};
 let routeAnchorLayer = null;
+let coordLayer = null;
+
+export function getMap() { return map; }
 
 // ---- Popup HTML helpers -------------------------------------------------- //
 
@@ -101,6 +104,7 @@ function ttsPopupHtml(entry) {
 // ---- SVG icons ----------------------------------------------------------- //
 
 const ttsIconHtml = `<svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="12" fill="#f97316" stroke="#7c2d12" stroke-width="1.5"/><path d="M8 15V11H11L14.5 8.5V17.5L11 15H8Z" fill="#fff"/><path d="M16.5 10.5C17.7 11.6 17.7 14.4 16.5 15.5" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/><path d="M18.8 8.7C20.9 10.7 20.9 15.3 18.8 17.3" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+const coordIconHtml = `<svg width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="12" fill="#ef4444" stroke="#7f1d1d" stroke-width="1.5"/><line x1="14" y1="3" x2="14" y2="11" stroke="#fff" stroke-width="2" stroke-linecap="round"/><line x1="14" y1="17" x2="14" y2="25" stroke="#fff" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="14" x2="11" y2="14" stroke="#fff" stroke-width="2" stroke-linecap="round"/><line x1="17" y1="14" x2="25" y2="14" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="14" cy="14" r="3" fill="#fff"/></svg>`;
 const routeIconHtml = `<svg width="30" height="36" viewBox="0 0 30 36"><path d="M15 2C9.48 2 5 6.48 5 12C5 19.2 15 34 15 34C15 34 25 19.2 25 12C25 6.48 20.52 2 15 2Z" fill="#0f766e" stroke="#134e4a" stroke-width="1.6"/><path d="M10.5 12.5C12 10.1 14.2 8.8 18.4 8.8" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/><path d="M18 6.9L20.7 8.8L18 10.7" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="17" r="1.9" fill="#fff"/><circle cx="18" cy="17" r="1.9" fill="#fff"/></svg>`;
 const departIconHtml = `<svg width="28" height="28" viewBox="0 0 28 28"><path d="M7 4H9V24H7Z" fill="#14532d"/><path d="M9 5H21L17.2 9.2L21 13.4H9Z" fill="#22c55e" stroke="#166534" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
 const destIconHtml = `<svg width="28" height="28" viewBox="0 0 28 28"><path d="M7 4H9V24H7Z" fill="#7f1d1d"/><path d="M9 5H21L17.2 9.2L21 13.4H9Z" fill="#ef4444" stroke="#7f1d1d" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
@@ -143,6 +147,7 @@ export function initMap(containerId, center = [37.5665, 126.9780]) {
     tts: L.layerGroup().addTo(map),
   };
   routeAnchorLayer = L.layerGroup().addTo(map);
+  coordLayer = L.layerGroup().addTo(map);
 
   map.on('click', clearRouteAnchors);
 
@@ -150,6 +155,26 @@ export function initMap(containerId, center = [37.5665, 126.9780]) {
 }
 
 export function getLayerGroup(name) { return layers[name] || null; }
+
+// ---- Coordinate marker --------------------------------------------------- //
+
+/**
+ * Add a coordinate search result marker to the map.
+ * Initialises the map first if it hasn't been loaded yet.
+ */
+export function addCoordMarker(lat, lon, popupHtml) {
+  if (!map) initMap('map', [lat, lon]);
+  const icon = divIcon(coordIconHtml, [28, 28], [14, 14], [0, -16]);
+  L.marker([lat, lon], { icon })
+    .bindPopup(popupHtml, { maxWidth: 300 })
+    .addTo(coordLayer)
+    .openPopup();
+  map.setView([lat, lon], Math.max(map.getZoom(), 15));
+}
+
+export function clearCoordMarkers() {
+  if (coordLayer) coordLayer.clearLayers();
+}
 
 // ---- Route anchor helpers ------------------------------------------------ //
 

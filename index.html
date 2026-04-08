@@ -92,6 +92,80 @@
     }
     #browse-btn:hover { opacity: 0.85; }
 
+    /* ---- Coordinate panel ---- */
+    #coord-panel {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #coord-panel h2 { font-size: 13px; font-weight: 600; color: var(--text); }
+    .coord-type-row { display: flex; gap: 6px; }
+    .coord-type-btn {
+      flex: 1;
+      padding: 5px 0;
+      font-size: 12px;
+      font-weight: 600;
+      background: rgba(148,163,184,0.1);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .coord-type-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #0b1220;
+    }
+    .coord-input-row { display: flex; flex-direction: column; gap: 3px; }
+    .coord-input-row label { font-size: 11px; color: var(--muted); }
+    .coord-input-row input {
+      background: rgba(15,23,42,0.8);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 12px;
+      padding: 5px 8px;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .coord-input-row input:focus { border-color: var(--accent); }
+    .coord-actions { display: flex; gap: 6px; }
+    #coord-show-btn {
+      flex: 1;
+      padding: 6px 0;
+      background: var(--accent);
+      color: #0b1220;
+      border: none;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    #coord-show-btn:hover { opacity: 0.85; }
+    #coord-clear-btn {
+      padding: 6px 10px;
+      background: rgba(148,163,184,0.1);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    #coord-clear-btn:hover { opacity: 0.7; }
+    #coord-result {
+      font-size: 11px;
+      min-height: 14px;
+      word-break: break-all;
+    }
+
     #analyze-extra-btn {
       width: 100%;
       padding: 10px 16px;
@@ -311,6 +385,28 @@
 
   <!-- Route/TTS additional analysis -->
   <button id="analyze-extra-btn" hidden>경로 요청 / TTS 추가 분석</button>
+
+  <!-- Coordinate search -->
+  <div id="coord-panel">
+    <h2>좌표 검색</h2>
+    <div class="coord-type-row">
+      <button class="coord-type-btn active" data-ctype="sk">SK 좌표</button>
+      <button class="coord-type-btn" data-ctype="wgs84">WGS84</button>
+    </div>
+    <div class="coord-input-row">
+      <label id="coord-label-x">X (경도 방향)</label>
+      <input type="number" id="coord-x" placeholder="예: 4571910">
+    </div>
+    <div class="coord-input-row">
+      <label id="coord-label-y">Y (위도 방향)</label>
+      <input type="number" id="coord-y" placeholder="예: 1347000">
+    </div>
+    <div class="coord-actions">
+      <button id="coord-show-btn">지도에 표시</button>
+      <button id="coord-clear-btn">삭제</button>
+    </div>
+    <div id="coord-result"></div>
+  </div>
 
   <!-- Layer toggle -->
   <div id="layer-panel" hidden>
