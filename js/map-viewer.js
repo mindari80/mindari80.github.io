@@ -125,34 +125,37 @@ function divIcon(html, size, anchor, popupAnchor) {
 export function initMap(containerId, center = [37.5665, 126.9780]) {
   if (map) { map.remove(); map = null; }
 
-  map = L.map(containerId, { preferCanvas: true, maxZoom: 24 }).setView(center, 15);
+  map = L.map(containerId, { preferCanvas: true, maxZoom: 22 }).setView(center, 15);
 
   L.tileLayer('https://tlpimg1.tmap.co.kr/tms/1.0.0/hd_tile/{z}/{x}/{-y}.png', {
-    minZoom: 5, maxZoom: 24, maxNativeZoom: 20,
+    minZoom: 5, maxZoom: 22, maxNativeZoom: 20,
     attribution: 'TMAP',
-    errorTileUrl: '',
   }).addTo(map);
 
-  // Zoom level display control (next to zoom buttons)
+  // ---- Zoom level display (next to +/- buttons) ----------------------------
   const ZoomDisplay = L.Control.extend({
     options: { position: 'topleft' },
     onAdd(m) {
       const el = L.DomUtil.create('div', 'leaflet-zoom-display');
       el.style.cssText = [
-        'background:rgba(15,23,42,0.85)',
-        'color:#e2e8f0',
-        'padding:4px 10px',
-        'font-size:13px',
+        'background:white',
+        'color:#333',
+        'width:26px',
+        'height:26px',
+        'display:flex',
+        'align-items:center',
+        'justify-content:center',
+        'font-size:12px',
         'font-weight:700',
-        'font-family:monospace',
-        'border-radius:4px',
-        'border:1px solid rgba(148,163,184,0.25)',
-        'margin-top:2px',
+        'font-family:Arial,sans-serif',
+        'border-radius:2px',
+        'border:2px solid rgba(0,0,0,0.2)',
+        'margin-top:1px',
         'pointer-events:none',
-        'letter-spacing:0.5px',
-        'box-shadow:0 1px 4px rgba(0,0,0,0.4)',
+        'box-shadow:0 1px 5px rgba(0,0,0,0.4)',
+        'line-height:1',
       ].join(';');
-      const update = () => { el.textContent = `Z ${m.getZoom()}`; };
+      const update = () => { el.textContent = m.getZoom(); };
       update();
       m.on('zoomend', update);
       return el;
