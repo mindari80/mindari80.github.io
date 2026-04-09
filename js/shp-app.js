@@ -48,7 +48,7 @@ const rulerBadge       = document.getElementById('ruler-badge');
 const mapDiv           = document.getElementById('map');
 
 // SHP panel refs
-const shpFileInput     = document.getElementById('shp-file-input');
+const shpFolderBtn     = document.getElementById('shp-folder-btn');
 const shpClearBtn      = document.getElementById('shp-clear-btn');
 const shpStatus         = document.getElementById('shp-status');
 const shpProgress       = document.getElementById('shp-progress');
@@ -215,13 +215,34 @@ function setShpProgress(pct, msg) {
   shpProgressLabel.textContent = msg;
 }
 
-shpFileInput.addEventListener('change', async () => {
-  const files = [...shpFileInput.files];
-  if (!files.length) return;
+shpFolderBtn.addEventListener('click', async () => {
+  let dirHandle;
+  try {
+    dirHandle = await window.showDirectoryPicker({ mode: 'read' });
+  } catch (e) {
+    if (e.name !== 'AbortError') showError(e);
+    return;
+  }
 
   shpStatus.textContent = '';
   shpLayerToggles.hidden = true;
-  setShpProgress(0, '준비 중...');
+  setShpProgress(0, '폴더 스캔 중...');
+
+  const files = [];
+  for await (const [name, handle] of dirHandle.entries()) {
+    if (handle.kind !== 'file') continue;
+    const lower = name.toLowerCase();
+    if (lower.endsWith('.shp') || lower.endsWith('.dbf') || lower.endsWith('.shx')) {
+      files.push(await handle.getFile());
+    }
+  }
+
+  if (!files.length) {
+    shpProgress.hidden = true;
+    shpStatus.textContent = 'SHP 파일을 찾을 수 없습니다.';
+    shpStatus.style.color = '#f87171';
+    return;
+  }
 
   try {
     const results = await loadShpFiles(files, (pct, msg) => setShpProgress(pct, msg));
@@ -254,7 +275,6 @@ shpFileInput.addEventListener('change', async () => {
     shpStatus.style.color = '#f87171';
     shpProgress.hidden = true;
   }
-  shpFileInput.value = '';
 });
 
 shpClearBtn.addEventListener('click', () => {

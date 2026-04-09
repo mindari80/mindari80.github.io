@@ -378,7 +378,6 @@
       transition: opacity 0.2s;
     }
     .shp-file-btn:hover { opacity: 0.85; }
-    #shp-file-input { display: none; }
     #shp-clear-btn {
       padding: 6px 10px;
       background: rgba(148,163,184,0.1);
@@ -783,11 +782,10 @@
   <div id="shp-panel">
     <h2>🛣 링크/노드 레이어</h2>
     <div class="shp-actions">
-      <label class="shp-file-btn" for="shp-file-input">SHP 파일 선택</label>
-      <input type="file" id="shp-file-input" multiple accept=".shp,.dbf">
+      <button class="shp-file-btn" id="shp-folder-btn">SHP 폴더 선택</button>
       <button id="shp-clear-btn">지우기</button>
     </div>
-    <div id="shp-status">SHP + DBF 파일을 함께 선택하세요 (GCS_Tokyo 자동 변환)</div>
+    <div id="shp-status">SHP 폴더를 선택하면 .shp/.dbf 파일을 자동 로드합니다 (GCS_Tokyo 자동 변환)</div>
     <div id="shp-progress" hidden>
       <div class="shp-progress-wrap"><div class="shp-progress-fill" id="shp-progress-fill"></div></div>
       <div id="shp-progress-label"></div>

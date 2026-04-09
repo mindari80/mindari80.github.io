@@ -231,14 +231,14 @@ async function renderShpGroup(name, group, onProgress) {
         // Re-apply highlight if this is the selected feature
         if (idx === selectedIndex) {
           selectedLayer = layer;
-          layer.setStyle({ color: '#f59e0b', weight: 3, opacity: 1 });
+          layer.setStyle({ color: '#ef4444', weight: 3, opacity: 1 });
         }
 
         layer.on('click', e => {
           L.DomEvent.stopPropagation(e);
           if (linkSelectMode && onLinkSelect) {
             if (selectedLayer && linkLayer) { try { linkLayer.resetStyle(selectedLayer); } catch {} }
-            e.target.setStyle({ color: '#f59e0b', weight: 3, opacity: 1 });
+            e.target.setStyle({ color: '#ef4444', weight: 3, opacity: 1 });
             selectedLayer = e.target;
             selectedIndex = idx;
             onLinkSelect(feature.properties);
