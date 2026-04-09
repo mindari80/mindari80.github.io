@@ -48,7 +48,7 @@ const rulerBadge       = document.getElementById('ruler-badge');
 const mapDiv           = document.getElementById('map');
 
 // SHP panel refs
-const shpFileInput     = document.getElementById('shp-file-input');
+const shpFolderBtn     = document.getElementById('shp-folder-btn');
 const shpClearBtn      = document.getElementById('shp-clear-btn');
 const shpStatus        = document.getElementById('shp-status');
 const shpLayerToggles  = document.getElementById('shp-layer-toggles');
@@ -202,13 +202,26 @@ function setCoordResult(msg, type) {
 
 // ---- SHP panel ----------------------------------------------------------- //
 
-shpFileInput.addEventListener('change', async () => {
-  const files = [...shpFileInput.files];
-  if (!files.length) return;
+shpFolderBtn.addEventListener('click', async () => {
+  let dirHandle;
+  try {
+    dirHandle = await window.showDirectoryPicker({ mode: 'read' });
+  } catch (e) {
+    if (e.name !== 'AbortError') {
+      shpStatus.textContent = `오류: ${e.message}`;
+      shpStatus.style.color = '#f87171';
+    }
+    return;
+  }
 
-  shpStatus.textContent = '읽는 중...';
+  shpStatus.textContent = '폴더 읽는 중...';
   shpStatus.style.color = 'var(--muted)';
   shpLayerToggles.hidden = true;
+
+  const files = [];
+  for await (const entry of dirHandle.values()) {
+    if (entry.kind === 'file') files.push(await entry.getFile());
+  }
 
   try {
     const results = await loadShpFiles(files, msg => {
@@ -226,7 +239,7 @@ shpFileInput.addEventListener('change', async () => {
       return `${r.name}: ${r.count.toLocaleString()}개 (${typeLabel})`;
     }).join('\n');
 
-    shpStatus.textContent = summary;
+    shpStatus.textContent = summary + '\n(지도 레벨 17 이상에서 표시됩니다)';
     shpStatus.style.color = '#4ade80';
 
     const hasLink = results.some(r => r.type === 'link');
@@ -239,7 +252,6 @@ shpFileInput.addEventListener('change', async () => {
     shpStatus.textContent = `오류: ${err.message}`;
     shpStatus.style.color = '#f87171';
   }
-  shpFileInput.value = '';
 });
 
 shpClearBtn.addEventListener('click', () => {

@@ -1,18 +1,88 @@
 /**
  * SHP link/node layer loader and renderer.
  * Depends on shpjs loaded as a global script (window.shp).
+ *
+ * Rendering strategy:
+ *  - All features are parsed once and kept in memory with pre-computed bboxes.
+ *  - Only features that intersect the current map viewport are rendered.
+ *  - Layers are only shown at zoom >= MIN_ZOOM (17).
  */
 
 'use strict';
 
 import { getMap } from './map-viewer.js';
 
-let linkLayer       = null;
-let nodeLayer       = null;
-let activePopup     = null;
-let clickListenerMap = null;  // track which map has the background-click handler
+const MIN_ZOOM = 17;
 
-// ---- Background click: close popup --------------------------------------- //
+let linkLayer        = null;
+let nodeLayer        = null;
+let activePopup      = null;
+let clickListenerMap = null;
+let moveListenerMap  = null;
+
+let allLinkData = [];  // { feature, bbox: [w,s,e,n] }[]
+let allNodeData = [];
+
+let linkEnabled = true;
+let nodeEnabled = true;
+
+// ---- Geometry helpers ---------------------------------------------------- //
+
+function flatCoords(geom) {
+  if (!geom) return [];
+  switch (geom.type) {
+    case 'Point':           return [geom.coordinates];
+    case 'LineString':      return geom.coordinates;
+    case 'MultiLineString': return geom.coordinates.flat();
+    case 'MultiPoint':      return geom.coordinates;
+    default:                return [];
+  }
+}
+
+function featureBbox(geom) {
+  const coords = flatCoords(geom);
+  if (!coords.length) return [0, 0, 0, 0];
+  let w = Infinity, s = Infinity, e = -Infinity, n = -Infinity;
+  for (const [lng, lat] of coords) {
+    if (lng < w) w = lng; if (lat < s) s = lat;
+    if (lng > e) e = lng; if (lat > n) n = lat;
+  }
+  return [w, s, e, n];
+}
+
+function bboxIntersects([fw, fs, fe, fn], bounds) {
+  return fe >= bounds.getWest()  && fw <= bounds.getEast() &&
+         fn >= bounds.getSouth() && fs <= bounds.getNorth();
+}
+
+// ---- Viewport update ----------------------------------------------------- //
+
+function updateViewport() {
+  const map = getMap();
+  if (!map) return;
+  const zoom  = map.getZoom();
+  const show  = zoom >= MIN_ZOOM;
+  const bounds = map.getBounds();
+
+  if (linkLayer) {
+    linkLayer.clearLayers();
+    if (show && linkEnabled && allLinkData.length) {
+      allLinkData
+        .filter(d => bboxIntersects(d.bbox, bounds))
+        .forEach(d => linkLayer.addData(d.feature));
+    }
+  }
+  if (nodeLayer) {
+    nodeLayer.clearLayers();
+    if (show && nodeEnabled && allNodeData.length) {
+      allNodeData
+        .filter(d => bboxIntersects(d.bbox, bounds))
+        .forEach(d => nodeLayer.addData(d.feature));
+    }
+  }
+}
+
+// ---- Map event listeners ------------------------------------------------- //
 
 function ensureMapClickListener(map) {
   if (clickListenerMap === map) return;
@@ -20,6 +90,12 @@ function ensureMapClickListener(map) {
     if (activePopup) { try { map.closePopup(); } catch {} activePopup = null; }
   });
   clickListenerMap = map;
+}
+
+function ensureMapMoveListener(map) {
+  if (moveListenerMap === map) return;
+  map.on('zoomend moveend', () => updateViewport());
+  moveListenerMap = map;
 }
 
 // ---- Popup HTML ---------------------------------------------------------- //
@@ -42,6 +118,8 @@ function buildPopupHtml(props) {
 // ---- Public API ---------------------------------------------------------- //
 
 export function clearShpLayers() {
+  allLinkData = [];
+  allNodeData = [];
   if (linkLayer) { try { linkLayer.remove(); } catch {} linkLayer = null; }
   if (nodeLayer) { try { nodeLayer.remove(); } catch {} nodeLayer = null; }
   const map = getMap();
@@ -81,15 +159,13 @@ export async function loadShpFiles(files, onStatus) {
 }
 
 export function toggleShpLink(visible) {
-  const map = getMap();
-  if (!linkLayer || !map) return;
-  visible ? map.addLayer(linkLayer) : map.removeLayer(linkLayer);
+  linkEnabled = visible;
+  updateViewport();
 }
 
 export function toggleShpNode(visible) {
-  const map = getMap();
-  if (!nodeLayer || !map) return;
-  visible ? map.addLayer(nodeLayer) : map.removeLayer(nodeLayer);
+  nodeEnabled = visible;
+  updateViewport();
 }
 
 // ---- Internal rendering -------------------------------------------------- //
@@ -98,8 +174,6 @@ async function renderShpGroup(name, group) {
   const shpBuf = await group.shp.arrayBuffer();
   const dbfBuf = group.dbf ? await group.dbf.arrayBuffer() : null;
 
-  // shpjs v4 top-level shp() only handles ZIP files.
-  // Use parseShp / parseDbf to handle raw .shp/.dbf buffers directly.
   const geometries = window.shp.parseShp(shpBuf);
   const attributes = dbfBuf ? window.shp.parseDbf(dbfBuf) : [];
 
@@ -109,7 +183,6 @@ async function renderShpGroup(name, group) {
     properties: attributes[i] || {},
   }));
 
-  const geojson = { type: 'FeatureCollection', features };
   if (!features.length) return { name, count: 0, type: 'empty' };
 
   const geomType = features[0]?.geometry?.type || '';
@@ -117,10 +190,12 @@ async function renderShpGroup(name, group) {
   const map      = getMap();
 
   ensureMapClickListener(map);
+  ensureMapMoveListener(map);
 
   if (isLine) {
     if (linkLayer) { try { linkLayer.remove(); } catch {} }
-    linkLayer = L.geoJSON(geojson, {
+    allLinkData = features.map(f => ({ feature: f, bbox: featureBbox(f.geometry) }));
+    linkLayer = L.geoJSON(null, {
       style: { color: '#22c55e', weight: 1.5, opacity: 0.8 },
       onEachFeature(feature, layer) {
         layer.on('click', e => {
@@ -137,7 +212,8 @@ async function renderShpGroup(name, group) {
     }).addTo(map);
   } else {
     if (nodeLayer) { try { nodeLayer.remove(); } catch {} }
-    nodeLayer = L.geoJSON(geojson, {
+    allNodeData = features.map(f => ({ feature: f, bbox: featureBbox(f.geometry) }));
+    nodeLayer = L.geoJSON(null, {
       pointToLayer: (_, latlng) => L.circleMarker(latlng, {
         radius: 3, color: '#f59e0b', fillColor: '#f59e0b', fillOpacity: 0.8, weight: 1,
       }),
@@ -153,6 +229,8 @@ async function renderShpGroup(name, group) {
       },
     }).addTo(map);
   }
+
+  updateViewport();
 
   return { name, count: features.length, type: isLine ? 'link' : 'node' };
 }
